@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">ACDAT-JuegoManuConSprites</string>
+    <string name="btnVolverAJugar">Volver a jugar</string>
+    <string name="btnSalir">Salir</string>
+</resources>
