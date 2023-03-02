@@ -19,6 +19,7 @@ import androidx.annotation.NonNull;
 import com.example.acdat_juegomanuconsprites.R;
 import com.example.acdat_juegomanuconsprites.clases.Persona;
 import com.example.acdat_juegomanuconsprites.clases.Platano;
+import com.example.acdat_juegomanuconsprites.clases.TempPow;
 import com.example.acdat_juegomanuconsprites.hilos.HiloAnimacionPlatano;
 import com.example.acdat_juegomanuconsprites.hilos.HiloColisionPlatano;
 import com.example.acdat_juegomanuconsprites.hilos.HiloJuego;
@@ -40,12 +41,14 @@ public class JuegoSV extends SurfaceView implements SurfaceHolder.Callback {
     private final Object lock = new Object();
     private HiloColisionPlatano hiloColisionPlatano;
     private MediaPlayer mp;
+    private ArrayList<TempPow> temps;
 
     public JuegoSV(Context context) {
         super(context);
 
         platanos = new ArrayList<Platano>();
         hilosAniPlatanos = new ArrayList<HiloAnimacionPlatano>();
+        temps = new ArrayList<TempPow>();
 
         mp = MediaPlayer.create(getContext(), R.raw.soundtrack);
         mp.setLooping(true);
@@ -132,8 +135,9 @@ public class JuegoSV extends SurfaceView implements SurfaceHolder.Callback {
         return getHeight();
     }
 
-    public void caida() {
+    public void caida(int xTemp, int yTemp) {
         soundPool.play(idPow, 1, 1, 0, 0, 1);
+        temps.add(new TempPow(temps, this, xTemp, yTemp, bmpCaida));
     }
 
     @Override
@@ -161,6 +165,10 @@ public class JuegoSV extends SurfaceView implements SurfaceHolder.Callback {
 
             persona.onDraw(canvas);
 
+            for(int i = temps.size() - 1; i >= 0; i--){
+                temps.get(i).onDraw(canvas);
+            }
+
             for (int i = 0; i < platanos.size(); i++) {
                 platanos.get(i).onDraw(canvas);
             }
@@ -186,7 +194,7 @@ public class JuegoSV extends SurfaceView implements SurfaceHolder.Callback {
     public Boolean colisionPlatano() {
         for (int i = 0; i < platanos.size(); i++) {
             if (persona.isHover(platanos.get(i))) {
-                caida();
+                caida(persona.getX(), persona.getY());
                 persona.vidaMenos();
                 platanos.remove(i);
                 hilosAniPlatanos.get(i).setRunning(false);

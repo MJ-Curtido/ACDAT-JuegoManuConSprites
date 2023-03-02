@@ -63,7 +63,7 @@ public class Persona {
 
     public void vidaMenos() {
         --vidas;
-        juegoSV.caida();
+        juegoSV.caida(x, y);
     }
 
     public void onDraw(Canvas canvas){
