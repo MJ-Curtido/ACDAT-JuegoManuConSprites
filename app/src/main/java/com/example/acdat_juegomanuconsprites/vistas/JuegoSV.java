@@ -17,12 +17,16 @@ import android.view.SurfaceView;
 import androidx.annotation.NonNull;
 
 import com.example.acdat_juegomanuconsprites.R;
+import com.example.acdat_juegomanuconsprites.clases.Moneda;
 import com.example.acdat_juegomanuconsprites.clases.Persona;
 import com.example.acdat_juegomanuconsprites.clases.Platano;
 import com.example.acdat_juegomanuconsprites.clases.TempPow;
+import com.example.acdat_juegomanuconsprites.hilos.HiloAnimacionMoneda;
 import com.example.acdat_juegomanuconsprites.hilos.HiloAnimacionPlatano;
+import com.example.acdat_juegomanuconsprites.hilos.HiloColisionMoneda;
 import com.example.acdat_juegomanuconsprites.hilos.HiloColisionPlatano;
 import com.example.acdat_juegomanuconsprites.hilos.HiloJuego;
+import com.example.acdat_juegomanuconsprites.hilos.HiloMoneda;
 import com.example.acdat_juegomanuconsprites.hilos.HiloPersona;
 import com.example.acdat_juegomanuconsprites.hilos.HiloPlatano;
 
@@ -36,10 +40,14 @@ public class JuegoSV extends SurfaceView implements SurfaceHolder.Callback {
     private int maxPuntuacion, idPow, puntuacion;
     private SoundPool soundPool;
     private ArrayList<Platano> platanos;
+    private ArrayList<Moneda> monedas;
     private ArrayList<HiloAnimacionPlatano> hilosAniPlatanos;
+    private ArrayList<HiloAnimacionMoneda> hilosAniMonedas;
     private HiloPlatano hiloPlatano;
+    private HiloMoneda hiloMoneda;
     private final Object lock = new Object();
     private HiloColisionPlatano hiloColisionPlatano;
+    private HiloColisionMoneda hiloColisionMoneda;
     private MediaPlayer mp;
     private ArrayList<TempPow> temps;
 
@@ -47,7 +55,9 @@ public class JuegoSV extends SurfaceView implements SurfaceHolder.Callback {
         super(context);
 
         platanos = new ArrayList<Platano>();
+        monedas = new ArrayList<Moneda>();
         hilosAniPlatanos = new ArrayList<HiloAnimacionPlatano>();
+        hilosAniMonedas = new ArrayList<HiloAnimacionMoneda>();
         temps = new ArrayList<TempPow>();
 
         mp = MediaPlayer.create(getContext(), R.raw.soundtrack);
@@ -83,9 +93,17 @@ public class JuegoSV extends SurfaceView implements SurfaceHolder.Callback {
         hiloPlatano.setRunning(true);
         hiloPlatano.start();
 
+        hiloMoneda = new HiloMoneda(this);
+        hiloMoneda.setRunning(true);
+        hiloMoneda.start();
+
         hiloColisionPlatano = new HiloColisionPlatano(this);
         hiloColisionPlatano.setRunning(true);
         hiloColisionPlatano.start();
+
+        hiloColisionMoneda = new HiloColisionMoneda(this);
+        hiloColisionMoneda.setRunning(true);
+        hiloColisionMoneda.start();
     }
 
     @Override
@@ -122,9 +140,15 @@ public class JuegoSV extends SurfaceView implements SurfaceHolder.Callback {
     public ArrayList<Platano> getPlatanos() {
         return platanos;
     }
+    public ArrayList<Moneda> getMonedas() {
+        return monedas;
+    }
 
     public ArrayList<HiloAnimacionPlatano> getHilosAniPlatanos() {
         return hilosAniPlatanos;
+    }
+    public ArrayList<HiloAnimacionMoneda> getHilosAniMonedas() {
+        return hilosAniMonedas;
     }
 
     public int getAnchoPantalla() {
@@ -161,12 +185,16 @@ public class JuegoSV extends SurfaceView implements SurfaceHolder.Callback {
                 canvas.drawBitmap(bmpCorazon, bmpCorazon.getWidth() * i, 0, null);
             }
 
-            canvas.drawText("Max. Puntuación: " + maxPuntuacion, 7, getHeight() - 40, paint);
+            canvas.drawText(puntuacion + " --> " + maxPuntuacion, 7, getHeight() - 40, paint);
 
             persona.onDraw(canvas);
 
             for(int i = temps.size() - 1; i >= 0; i--){
                 temps.get(i).onDraw(canvas);
+            }
+
+            for (int i = 0; i < monedas.size(); i++) {
+                monedas.get(i).onDraw(canvas);
             }
 
             for (int i = 0; i < platanos.size(); i++) {
@@ -191,6 +219,12 @@ public class JuegoSV extends SurfaceView implements SurfaceHolder.Callback {
         hilosAniPlatanos.remove(0);
     }
 
+    public void eliminaMoneda() {
+        monedas.remove(0);
+        hilosAniMonedas.get(0).setRunning(false);
+        hilosAniMonedas.remove(0);
+    }
+
     public Boolean colisionPlatano() {
         for (int i = 0; i < platanos.size(); i++) {
             if (persona.isHover(platanos.get(i))) {
@@ -199,6 +233,25 @@ public class JuegoSV extends SurfaceView implements SurfaceHolder.Callback {
                 platanos.remove(i);
                 hilosAniPlatanos.get(i).setRunning(false);
                 hilosAniPlatanos.remove(i);
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public Boolean colisionMoneda() {
+        for (int i = 0; i < monedas.size(); i++) {
+            if (persona.isHover(monedas.get(i))) {
+                puntuacion += 10;
+
+                if (puntuacion > maxPuntuacion) {
+                    maxPuntuacion = puntuacion;
+                }
+                
+                monedas.remove(i);
+                hilosAniMonedas.get(i).setRunning(false);
+                hilosAniMonedas.remove(i);
                 return true;
             }
         }

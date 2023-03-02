@@ -75,19 +75,40 @@ public class Persona {
         canvas.drawBitmap(bmp, src, dst, null);
     }
 
-    public boolean isHover(Platano platano) {
-        double centroX = (width / 2) + x;
-        double centroY = (height / 2) + y;
+    public boolean isHover(Object o) {
+        if (o instanceof Platano) {
+            Platano platano = (Platano) o;
 
-        double centroXR = (platano.getWidth() / 2) + platano.getX();
-        double centroYR = (platano.getHeight() / 2) + platano.getY();
+            double centroX = (width / 2) + x;
+            double centroY = (height / 2) + y;
 
-        double distanciaPuntos = Math.sqrt(Math.pow(centroXR - centroX, 2) + Math.pow(centroYR - centroY, 2));
+            double centroXR = (platano.getWidth() / 2) + platano.getX();
+            double centroYR = (platano.getHeight() / 2) + platano.getY();
 
-        if(distanciaPuntos < (width / 1.7)){
-            return true;
+            double distanciaPuntos = Math.sqrt(Math.pow(centroXR - centroX, 2) + Math.pow(centroYR - centroY, 2));
+
+            if(distanciaPuntos < (width / 1.7)){
+                return true;
+            }
+
+            return false;
         }
+        else {
+            Moneda moneda = (Moneda) o;
 
-        return false;
+            double centroX = (width / 2) + x;
+            double centroY = (height / 2) + y;
+
+            double centroXR = (moneda.getWidth() / 2) + moneda.getX();
+            double centroYR = (moneda.getHeight() / 2) + moneda.getY();
+
+            double distanciaPuntos = Math.sqrt(Math.pow(centroXR - centroX, 2) + Math.pow(centroYR - centroY, 2));
+
+            if(distanciaPuntos < (width / 1.7)){
+                return true;
+            }
+
+            return false;
+        }
     }
 }
