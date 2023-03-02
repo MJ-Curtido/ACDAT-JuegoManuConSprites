@@ -9,8 +9,7 @@ import com.example.acdat_juegomanuconsprites.vistas.JuegoSV;
 public class Platano {
     private static final int SPEED = 27;
     private static final double CESPED_PORCENTAJE = 0.15;
-    private int x;
-    private int y;
+    private int x, y;
     private int ySpeed;
     private JuegoSV juegoSV;
     private Bitmap bmp;
@@ -38,12 +37,12 @@ public class Platano {
         return y;
     }
 
-    public Bitmap getBmp() {
-        return bmp;
+    public int getWidth() {
+        return width;
     }
 
-    public Rect getBounds(){
-        return new Rect(x, y, x + bmp.getWidth(), y + bmp.getHeight());
+    public int getHeight() {
+        return height;
     }
 
     private void update(){

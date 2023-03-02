@@ -3,6 +3,7 @@ package com.example.acdat_juegomanuconsprites.clases;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Rect;
+import android.util.Log;
 
 import com.example.acdat_juegomanuconsprites.vistas.JuegoSV;
 
@@ -49,12 +50,13 @@ public class Persona {
     }
 
     public void update(){
-        if(x > juegoSV.getWidth() - width - xSpeed - (juegoSV.getWidth() * CESPED_PORCENTAJE) || (x + xSpeed) < (juegoSV.getWidth() * CESPED_PORCENTAJE)) {
-            //mostrar el pow
-            vidaMenos();
-        }
-
         x = x + xSpeed;
+
+        if(x > juegoSV.getWidth() - width - xSpeed - (juegoSV.getWidth() * CESPED_PORCENTAJE) || (x + xSpeed) < (juegoSV.getWidth() * CESPED_PORCENTAJE)) {
+            vidaMenos();
+            this.y = juegoSV.getAltoPantalla() - (juegoSV.getHeight() / 5);
+            this.x = (juegoSV.getAnchoPantalla() / 2) - (width / 2);
+        }
 
         currentFrame = ++currentFrame % BMP_COLUMNS;
     }
@@ -62,12 +64,6 @@ public class Persona {
     public void vidaMenos() {
         --vidas;
         juegoSV.caida();
-        this.y = juegoSV.getAltoPantalla() - (juegoSV.getHeight() / 5);
-        this.x = (juegoSV.getAnchoPantalla() / 2) - (width / 2);
-    }
-
-    public Rect getBounds(){
-        return new Rect(x, y, x + bmp.getWidth(), y + bmp.getHeight());
     }
 
     public void onDraw(Canvas canvas){
@@ -79,10 +75,19 @@ public class Persona {
         canvas.drawBitmap(bmp, src, dst, null);
     }
 
-    public boolean isTouched(float x2, float y2) {
-        if(x2 > x && x2 < x + width && y2 > y && y2 < y + height){
+    public boolean isHover(Platano platano) {
+        double centroX = (width / 2) + x;
+        double centroY = (height / 2) + y;
+
+        double centroXR = (platano.getWidth() / 2) + platano.getX();
+        double centroYR = (platano.getHeight() / 2) + platano.getY();
+
+        double distanciaPuntos = Math.sqrt(Math.pow(centroXR - centroX, 2) + Math.pow(centroYR - centroY, 2));
+
+        if(distanciaPuntos < (width / 1.7)){
             return true;
         }
+
         return false;
     }
 }

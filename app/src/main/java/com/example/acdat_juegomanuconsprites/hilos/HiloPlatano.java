@@ -17,7 +17,7 @@ public class HiloPlatano extends Thread{
     private ArrayList<HiloAnimacionPlatano> hilosAniPlatanos;
 
     public HiloPlatano(JuegoSV juegoSV) {
-        tiempoDeUpdate = 2000;
+        tiempoDeUpdate = 1170;
         running = false;
 
         this.juegoSV = juegoSV;
@@ -25,7 +25,7 @@ public class HiloPlatano extends Thread{
         hilosAniPlatanos = juegoSV.getHilosAniPlatanos();
     }
 
-    public void setRunning(boolean running) {
+    public synchronized void setRunning(boolean running) {
         this.running = running;
     }
 

@@ -4,42 +4,39 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.app.AppCompatDelegate;
 
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
+import android.media.MediaPlayer;
 import android.os.Bundle;
+import android.view.View;
 
 import com.example.acdat_juegomanuconsprites.R;
 import com.example.acdat_juegomanuconsprites.databinding.ActivityMainBinding;
 
-public class MainActivity extends AppCompatActivity {
-    private int maxPuntuacion;
+public class MainActivity extends AppCompatActivity implements View.OnClickListener {
+    private ActivityMainBinding binding;
+    private MediaPlayer mp;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        SharedPreferences preferencias = getSharedPreferences ("datosApp", Context.MODE_PRIVATE);
+        binding = ActivityMainBinding.inflate(getLayoutInflater());
+        setContentView(binding.getRoot());
 
-        if (preferencias.getInt("maxPuntuacion", -1) == -1) {
-            maxPuntuacion = 0;
-        }
-        else {
-            maxPuntuacion = preferencias.getInt("maxPuntuacion", -1);
-        }
+        binding.btnJugar.setOnClickListener(this);
 
-        setContentView(new JuegoSV(MainActivity.this));
+        mp = MediaPlayer.create(this, R.raw.opening);
+        mp.setLooping(true);
+        mp.setVolume(0.3f, 0.3f);
+        mp.start();
     }
 
-    public int getMaxPuntuacion() {
-        return maxPuntuacion;
-    }
-
-    public void guardarPuntuacion(int puntuacion) {
-        SharedPreferences preferencias = getSharedPreferences("datosApp", Context.MODE_PRIVATE);
-
-        SharedPreferences.Editor editor = preferencias.edit();
-
-        editor.putInt("maxPuntuacion", puntuacion);
-
-        editor.commit();
+    @Override
+    public void onClick(View view) {
+        Intent intent = new Intent(this, JuegoAct.class);
+        startActivity(intent);
+        mp.stop();
+        finish();
     }
 }

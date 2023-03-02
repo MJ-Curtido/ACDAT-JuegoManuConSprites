@@ -13,11 +13,15 @@ public class HiloPersona extends Thread {
 
         tiempoDeUpdate = 20;
         cont = 0;
-        running = true;
+        running = false;
     }
 
     public void setRunning(boolean running) {
         this.running = running;
+    }
+
+    public boolean isRunning() {
+        return running;
     }
 
     @Override

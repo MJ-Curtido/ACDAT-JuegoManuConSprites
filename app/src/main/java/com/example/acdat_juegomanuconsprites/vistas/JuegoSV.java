@@ -7,7 +7,9 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.media.AudioManager;
+import android.media.MediaPlayer;
 import android.media.SoundPool;
+import android.util.Log;
 import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
@@ -26,26 +28,33 @@ import com.example.acdat_juegomanuconsprites.hilos.HiloPlatano;
 import java.util.ArrayList;
 
 public class JuegoSV extends SurfaceView implements SurfaceHolder.Callback {
-    private Boolean continua;
     private Bitmap bmpCaida, bmpPersona, bmpCorazon;
     private HiloJuego hiloJuego;
     private Persona persona = null;
     private HiloPersona hiloPersona;
-    private int maxPuntuacion, idPow;
+    private int maxPuntuacion, idPow, puntuacion;
     private SoundPool soundPool;
     private ArrayList<Platano> platanos;
-    private ArrayList<Moneda> monedas;
     private ArrayList<HiloAnimacionPlatano> hilosAniPlatanos;
     private HiloPlatano hiloPlatano;
     private final Object lock = new Object();
     private HiloColisionPlatano hiloColisionPlatano;
+    private MediaPlayer mp;
 
     public JuegoSV(Context context) {
         super(context);
 
-        maxPuntuacion = ((MainActivity) context).getMaxPuntuacion();
-        continua = false;
-        soundPool = new SoundPool( 5, AudioManager.STREAM_MUSIC , 0);
+        platanos = new ArrayList<Platano>();
+        hilosAniPlatanos = new ArrayList<HiloAnimacionPlatano>();
+
+        mp = MediaPlayer.create(getContext(), R.raw.soundtrack);
+        mp.setLooping(true);
+        mp.setVolume(0.3f, 0.3f);
+        mp.start();
+
+        maxPuntuacion = ((JuegoAct) context).getMaxPuntuacion();
+
+        soundPool = new SoundPool(5, AudioManager.STREAM_MUSIC , 0);
         idPow = soundPool.load(context, R.raw.platano, 0);
 
         getHolder().addCallback(this);
@@ -55,20 +64,18 @@ public class JuegoSV extends SurfaceView implements SurfaceHolder.Callback {
     @Override
     public void surfaceCreated(@NonNull SurfaceHolder surfaceHolder) {
         bmpCaida = BitmapFactory.decodeResource(getResources(), R.drawable.caida);
-
         bmpPersona = BitmapFactory.decodeResource(getResources(), R.drawable.persona);
+        bmpCorazon = BitmapFactory.decodeResource(getResources(), R.drawable.vida);
+
         persona = new Persona(this, bmpPersona);
         hiloPersona = new HiloPersona(persona);
-
-        bmpCorazon = BitmapFactory.decodeResource(getResources(), R.drawable.vida);
+        hiloPersona.setRunning(true);
+        hiloPersona.start();
 
         hiloJuego = new HiloJuego(this);
         hiloJuego.setRunning(true);
         hiloJuego.start();
 
-        platanos = new ArrayList<Platano>();
-        monedas = new ArrayList<Moneda>();
-        hilosAniPlatanos = new ArrayList<HiloAnimacionPlatano>();
         hiloPlatano = new HiloPlatano(this);
         hiloPlatano.setRunning(true);
         hiloPlatano.start();
@@ -85,7 +92,28 @@ public class JuegoSV extends SurfaceView implements SurfaceHolder.Callback {
 
     @Override
     public void surfaceDestroyed(@NonNull SurfaceHolder surfaceHolder) {
+        cerrarJuego();
+    }
 
+    public void cerrarJuego() {
+        mp.stop();
+        boolean retry = true;
+        hiloJuego.setRunning(false);
+        hiloPersona.setRunning(false);
+        hiloPlatano.setRunning(false);
+        hiloColisionPlatano.setRunning(false);
+
+        while (retry) {
+            try {
+                hiloJuego.join();
+                hiloPersona.join();
+                hiloPlatano.join();
+                hiloColisionPlatano.join();
+                retry = false;
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     public ArrayList<Platano> getPlatanos() {
@@ -104,57 +132,27 @@ public class JuegoSV extends SurfaceView implements SurfaceHolder.Callback {
         return getHeight();
     }
 
-    public void setContinua(Boolean continua) {
-        this.continua = continua;
-    }
-
     public void caida() {
         soundPool.play(idPow, 1, 1, 0, 0, 1);
-        pararJuego();
     }
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
-        if (continua) {
-            persona.setXSpeed();
-        }
-        else {
-            continuarJuego();
-        }
+        persona.setXSpeed();
 
         return false;
-    }
-
-    public void pararJuego() {
-        setContinua(false);
-
-        hiloColisionPlatano.setRunning(false);
-        for (HiloAnimacionPlatano hilo : hilosAniPlatanos) {
-            hilo.setRunning(false);
-        }
-        hilosAniPlatanos.clear();
-        hiloPlatano.setRunning(false);
-        hiloPersona.setRunning(false);
-        platanos.clear();
-    }
-
-    public void continuarJuego() {
-        setContinua(true);
-        hiloColisionPlatano.setRunning(true);
-        hiloPlatano.setRunning(true);
-        hiloPersona.setRunning(true);
     }
 
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
 
-        Paint paint = new Paint();
-        paint.setAntiAlias(true);
-        paint.setColor(Color.rgb(255, 221, 1));
-        paint.setTextSize(77);
+        if (persona.getVidas() > 0) {
+            Paint paint = new Paint();
+            paint.setAntiAlias(true);
+            paint.setColor(Color.rgb(255, 221, 1));
+            paint.setTextSize(77);
 
-        if (continua) {
             for (int i = 0; i < persona.getVidas(); i++) {
                 canvas.drawBitmap(bmpCorazon, bmpCorazon.getWidth() * i, 0, null);
             }
@@ -163,23 +161,19 @@ public class JuegoSV extends SurfaceView implements SurfaceHolder.Callback {
 
             persona.onDraw(canvas);
 
-            synchronized (lock) {
-                for (Platano platano : platanos) {
-                    platano.onDraw(canvas);
-                }
+            for (int i = 0; i < platanos.size(); i++) {
+                platanos.get(i).onDraw(canvas);
             }
 
             if (hiloColisionPlatano.isColision()) {
                 canvas.drawBitmap(bmpCaida, persona.getX(), persona.getY(), null);
-                //pararJuego();
             }
         }
         else {
-            for (int i = 0; i < persona.getVidas(); i++) {
-                canvas.drawBitmap(bmpCorazon, getWidth() / 2 - (bmpCorazon.getWidth() * (persona.getVidas() / 2)) + (bmpCorazon.getWidth() * i), getHeight() / 2, null);
-            }
+            ((JuegoAct) getContext()).guardarPuntuacion(puntuacion);
 
-            canvas.drawText("Pulse para empezar", (getWidth() / 2) - 270, (getHeight() / 2), paint);
+            cerrarJuego();
+            ((JuegoAct) getContext()).cerrar();
         }
     }
 
@@ -190,21 +184,13 @@ public class JuegoSV extends SurfaceView implements SurfaceHolder.Callback {
     }
 
     public Boolean colisionPlatano() {
-        //Rect rectPersona = persona.getBounds();
-
         for (int i = 0; i < platanos.size(); i++) {
-            /*
-            Rect rectPlatano = platanos.get(i).getBounds();
-            if (rectPersona.intersect(rectPlatano)) {
+            if (persona.isHover(platanos.get(i))) {
+                caida();
+                persona.vidaMenos();
                 platanos.remove(i);
                 hilosAniPlatanos.get(i).setRunning(false);
                 hilosAniPlatanos.remove(i);
-                return true;
-            }
-            */
-
-            if (persona.isTouched(platanos.get(i).getX(), platanos.get(i).getY()) || persona.isTouched(platanos.get(i).getX(), platanos.get(i).getBmp().getHeight()) || persona.isTouched(platanos.get(i).getBmp().getWidth(), platanos.get(i).getY()) || persona.isTouched(platanos.get(i).getBmp().getWidth(), platanos.get(i).getBmp().getHeight())) {
-
                 return true;
             }
         }
